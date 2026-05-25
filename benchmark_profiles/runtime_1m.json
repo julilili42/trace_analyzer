@@ -1,6 +1,6 @@
 {
   "dataset_seed": 42,
-  "description": "Large local runtime profile for validating scalability after promising 100k/500k results.",
+  "description": "1m rows",
   "frame_size": 64,
   "generated_input_dir": "input_data/",
   "input_path": "input_data/data.csv",

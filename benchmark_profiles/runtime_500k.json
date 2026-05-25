@@ -1,6 +1,6 @@
 {
   "dataset_seed": 42,
-  "description": "Medium-large runtime comparison profile for checking whether an optimization still scales.",
+  "description": "500k rows",
   "frame_size": 64,
   "generated_input_dir": "input_data/",
   "input_path": "input_data/data.csv",

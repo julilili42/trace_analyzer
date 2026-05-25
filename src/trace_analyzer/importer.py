@@ -11,5 +11,5 @@ class Importer:
             "timestamp_ms": "uint32",
             "stream_id": "category",
             "payload_bytes": "uint16",
-            "latency_ms": "float64",
+            "latency_ms": "float32",
         },)

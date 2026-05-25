@@ -1,6 +1,6 @@
 {
   "dataset_seed": 42,
-  "description": "Fast code-under-test sanity check; verifies the benchmark path without producing stable performance numbers.",
+  "description": "10k rows",
   "frame_size": 64,
   "generated_input_dir": "input_data/",
   "input_path": "input_data/data.csv",

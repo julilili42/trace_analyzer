@@ -1,6 +1,6 @@
 {
   "dataset_seed": 42,
-  "description": "Higher-repeat runtime profile for estimating variance and median stability on the standard 100k dataset.",
+  "description": "100k rows (30 runs)",
   "frame_size": 64,
   "generated_input_dir": "input_data/",
   "input_path": "input_data/data.csv",

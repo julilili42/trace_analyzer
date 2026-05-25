@@ -1,6 +1,6 @@
 {
   "dataset_seed": 42,
-  "description": "Single measured run without warmup; useful for observing first-run behavior, not for stable comparisons.",
+  "description": "100k rows (no warmups)",
   "frame_size": 64,
   "generated_input_dir": "input_data/",
   "input_path": "input_data/data.csv",

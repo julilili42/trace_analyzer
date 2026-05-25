@@ -1,13 +1,13 @@
 {
   "dataset_seed": 42,
-  "description": "Large local runtime profile for validating scalability after promising 100k/500k results.",
+  "description": "10m rows",
   "frame_size": 64,
   "generated_input_dir": "input_data/",
   "input_path": "input_data/data.csv",
   "latency_max_ms": 5.0,
   "latency_min_ms": 0.2,
   "link_speed_mbit": 100.0,
-  "name": "runtime_1m",
+  "name": "runtime_10m",
   "output_root": "output_data/benchmark_runs",
   "payload_sizes": [
     64,

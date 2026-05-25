@@ -1,6 +1,6 @@
 {
   "dataset_seed": 42,
-  "description": "Primary runtime comparison profile for local code-version benchmarks.",
+  "description": "100k rows",
   "frame_size": 64,
   "generated_input_dir": "input_data/",
   "input_path": "input_data/data.csv",
