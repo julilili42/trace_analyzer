@@ -41,34 +41,34 @@ class Analyzer:
         link_speed_mbit: float = 100,
     ) -> dict[str, Stats]:
         stats: dict[str, Stats] = {}
-        stream_group = self.df.groupby("stream_id")
+        stream_stats = self.df.groupby("stream_id", sort=False, observed=True).agg(
+            payload_max=("payload_bytes", "max"),
+            payload_mean=("payload_bytes", "mean"),
+            payload_total=("payload_bytes", "sum"),
+            latency_max=("latency_ms", "max"),
+            latency_mean=("latency_ms", "mean"),
 
-        payload = stream_group["payload_bytes"].agg(
-            max="max",
-            mean="mean",
-            sum_frames=lambda x: self.sum_frames(x, frame_size),
         )
 
-        latency = stream_group["latency_ms"].agg(
-            max="max",
-            mean="mean",
-        )
+        stream_stats["payload_sum_frames"] = np.ceil(
+            stream_stats["payload_total"] / frame_size).astype(int)
 
         busload = self._calc_busload_stats(
             window_ms=window_ms,
             link_speed_mbit=link_speed_mbit,
         )
 
-        for stream_id in payload.index:
+        for stream_id in stream_stats.index:
             stats[stream_id] = Stats(
                 payload=Payload(
-                    max=payload.loc[stream_id, "max"],
-                    mean=payload.loc[stream_id, "mean"],
-                    sum_frames=int(payload.loc[stream_id, "sum_frames"]),
+                    max=stream_stats.loc[stream_id, "payload_max"],
+                    mean=stream_stats.loc[stream_id, "payload_mean"],
+                    sum_frames=int(
+                        stream_stats.loc[stream_id, "payload_sum_frames"]),
                 ),
                 latency=Latency(
-                    max=latency.loc[stream_id, "max"],
-                    mean=latency.loc[stream_id, "mean"],
+                    max=stream_stats.loc[stream_id, "latency_max"],
+                    mean=stream_stats.loc[stream_id, "latency_mean"],
                 ),
                 busload=Busload(
                     min=busload.loc[stream_id, "min"],
@@ -90,28 +90,24 @@ class Analyzer:
         if link_speed_mbit <= 0:
             raise ValueError("link_speed_mbit must be greater than 0")
 
-        df = self.df.copy()
+        window_start_ms = (self.df["timestamp_ms"] // window_ms) * window_ms
 
-        df["window_start_ms"] = (df["timestamp_ms"] // window_ms) * window_ms
-
-        busload = (
-            df.groupby(["stream_id", "window_start_ms"])
-            .agg(
-                payload_bytes_total=("payload_bytes", "sum"),
-            )
+        payload_per_window = (
+            self.df.groupby(["stream_id", window_start_ms],
+                            sort=False, observed=True)["payload_bytes"].sum()
         )
 
-        window_seconds = window_ms / 1000
-        max_bits_per_window = link_speed_mbit * 1_000_000 * window_seconds
+        scale = 8 / (link_speed_mbit * 1_000_000 * (window_ms / 1000)) * 100
 
-        busload["payload_bits_total"] = busload["payload_bytes_total"] * 8
-        busload["busload_percent"] = (
-            busload["payload_bits_total"] / max_bits_per_window * 100
-        )
-
-        return busload.groupby(level="stream_id")["busload_percent"].agg(
+        busload = (payload_per_window * scale).groupby(
+            level="stream_id",
+            sort=False,
+            observed=True
+        ).agg(
             ["min", "max", "mean"]
         )
+
+        return busload
 
     def sum_frames(self, x, frame_size: int) -> int:
         if frame_size <= 0:
