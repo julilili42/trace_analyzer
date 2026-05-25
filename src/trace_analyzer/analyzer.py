@@ -44,10 +44,49 @@ class Analyzer:
         stream_codes = self.df["stream_id"].cat.codes.to_numpy(copy=False).astype(np.int64,
                                                                                   copy=False)
         stream_names = self.df["stream_id"].cat.categories
+        n_streams = len(stream_names)
 
         payload = self.df["payload_bytes"].to_numpy(copy=False)
         latency = self.df["latency_ms"].to_numpy(copy=False)
 
+        # payload & latency stats
+        (payload_stats, latency_stats) = self._calc_payload_latency_stats(
+            stream_codes, n_streams, payload, latency, frame_size)
+
+        # busload stats
+        busload_stats = self._calc_busload_stats(
+            window_ms=window_ms,
+            link_speed_mbit=link_speed_mbit,
+        )
+
+        for i, stream_id in enumerate(stream_names):
+            stats[stream_id] = Stats(
+                payload=Payload(
+                    max=payload_stats.max[i],
+                    mean=payload_stats.mean[i],
+                    sum_frames=payload_stats.sum_frames[i]
+                ),
+                latency=Latency(
+                    max=latency_stats.max[i],
+                    mean=latency_stats.mean[i]
+                ),
+                busload=Busload(
+                    min=busload_stats.min[i],
+                    max=busload_stats.max[i],
+                    mean=busload_stats.mean[i],
+                ),
+            )
+
+        return stats
+
+    def _calc_payload_latency_stats(
+            self,
+            stream_codes,
+            n_streams,
+            payload,
+            latency,
+            frame_size
+    ):
         # optimized mean + sum calculation
         # index of new array corresponds to streamcode, value corresponds to number of occurences
         row_count = np.bincount(stream_codes)
@@ -61,40 +100,19 @@ class Analyzer:
         sum_frames = np.ceil(payload_sum / frame_size).astype(int)
 
         # optimized max calculation
-        n_streams = len(stream_names)
         payload_max = np.zeros(n_streams, dtype=payload.dtype)
         latency_max = np.full(n_streams, -np.inf, dtype=latency.dtype)
 
         np.maximum.at(payload_max, stream_codes, payload)
         np.maximum.at(latency_max, stream_codes, latency)
 
-        busload = self.calc_busload_stats(
-            window_ms=window_ms,
-            link_speed_mbit=link_speed_mbit,
-        )
+        payload_stats = Payload(payload_mean, payload_max, sum_frames)
+        latency_stats = Latency(latency_mean, latency_max)
 
-        for i, stream_id in enumerate(stream_names):
-            stats[stream_id] = Stats(
-                payload=Payload(
-                    max=payload_max[i],
-                    mean=payload_mean[i],
-                    sum_frames=sum_frames[i]
-                ),
-                latency=Latency(
-                    max=latency_max[i],
-                    mean=latency_mean[i]
-                ),
-                busload=Busload(
-                    min=busload.loc[stream_id, "min"],
-                    max=busload.loc[stream_id, "max"],
-                    mean=busload.loc[stream_id, "mean"],
-                ),
-            )
+        return (payload_stats, latency_stats)
 
-        return stats
-
-    # assumption: timestamps are roughtly uniformly distributed
-    def calc_busload_stats(
+    # Assumption: timestamps are roughtly uniformly distributed
+    def _calc_busload_stats(
         self,
         window_ms: float,
         link_speed_mbit: float,
@@ -151,11 +169,4 @@ class Analyzer:
         busload_count = np.bincount(stream_per_pair, minlength=n_streams)
         busload_mean = busload_sum / busload_count
 
-        return DataFrame(
-            {
-                "min": busload_min,
-                "max": busload_max,
-                "mean": busload_mean,
-            },
-            index=stream_names,
-        )
+        return Busload(busload_min, busload_max, busload_mean)

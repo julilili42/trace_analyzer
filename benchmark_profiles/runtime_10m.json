@@ -19,9 +19,9 @@
     1500
   ],
   "results_file": "benchmark_results/results.jsonl",
-  "runs": 5,
+  "runs": 10,
   "scenario": null,
   "trace_count": 10000000,
-  "warmups": 1,
+  "warmups": 2,
   "window_ms": 10.0
 }
